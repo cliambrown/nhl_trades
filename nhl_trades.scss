@@ -1,0 +1,606 @@
+@import 'colours';
+@import 'definitions';
+
+$logo-width-px: 56px; // target logo width on desktop
+$logo-width: 100% * $logo-width-px / ($content-width - $logo-width-px);
+$circle-diameter: 100% * 100% / (100% + $logo-width);
+$halfPi: pi() / 2;
+
+$type-colours: $green, $dark-blue, $dark-red, #89734C;
+
+#circle-container {
+    width: 100%;
+    margin: 0 auto;
+}
+#circle {
+    display: inline-block;
+    vertical-align: top;
+    width: $circle-diameter;
+    height: 0;
+    padding-bottom: $circle-diameter;
+    margin: ($logo-width/2) ($logo-width/2);
+    position: relative;
+    z-index: 1;
+}
+
+.logo {
+    -webkit-box-sizing: content-box;
+            box-sizing: content-box;
+    width: $logo-width;
+    height: 0;
+    padding-bottom: $logo-width;
+    border-radius: 50%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-color: grey;
+    position: absolute;
+    -webkit-transform: translate3d(-50%,-50%,0);
+            transform: translate3d(-50%,-50%,0);
+    z-index: 3;
+    cursor: pointer;
+    
+    &.selected {
+        border: 4px solid #FFF;
+        -webkit-box-shadow: 0px 0px 0px 5px $blue-grey-dark;
+                box-shadow: 0px 0px 0px 5px $blue-grey-dark;
+    }
+    
+    .trade-count {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        -webkit-transform: translateX(-50%);
+                transform: translateX(-50%);
+        font-weight: 600;
+        font-size: 14px;
+        line-height: 14px;
+        color: #FFF;
+        background: rgba(0, 0, 0, 0.75);
+        padding: 2px;
+        border-radius: 5px;
+        visibility: hidden;
+        display: none;
+        
+        @media screen and (max-width: 479px), screen and (max-height: 479px) {
+            font-size: 12px;
+            line-height: 12px;
+        }
+        @media screen and (max-width: 399px), screen and (max-height: 399px) {
+            display: none !important;
+        }
+    }
+}
+#circle.show-numbers .trade-count {
+    display: block;
+}
+$teams: 'ANA','ARI','BOS','BUF','CAR','CBJ','CGY','CHI','COL','DAL',
+        'DET','EDM','FLA','LAK','MIN','MTL','NJD','NSH','NYI','NYR',
+        'OTT','PHI','PIT','SJS','STL','TBL','TOR','VAN','VGK','WPG','WSH';
+@for $i from 1 through 31 {
+    $team: nth($teams, $i);
+    .logo.#{$team} {
+        background-image: url('../img/nhl_logos/#{$team}.png');
+    }
+    .logo.team-#{$i} {
+        $angle: $halfPi - (($i * 2 * pi())/31);
+        top: 50% * (1 - sin($angle));
+        left: 50% * (1 + cos($angle));
+    }
+}
+
+#canvas-container {
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    
+    #canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        outline: none !important;
+        
+        * {
+            outline: none !important;
+        }
+        
+        path {
+            fill: none;
+            
+            &.bg-line {
+                stroke: #263137;
+                stroke-width: 1;
+                opacity: 0;
+            }
+            
+            &.anim-line {
+                stroke-width: 2;
+                
+                @for $i from 1 through 4 {
+                    &.type-#{$i} { stroke: nth($type-colours, $i); }
+                }
+            }
+        }
+        #dot {
+            visibility: hidden;
+            
+            @for $i from 1 through 4 {
+                $type-colour: nth($type-colours, $i);
+                &.type-#{$i} {
+                    fill: $type-colour;
+                }
+            }
+        }
+    }
+    
+    #loading-progress-container, #center-message {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        -webkit-transform: translate(-50%,-50%);
+                transform: translate(-50%,-50%);
+    }
+    #loading-progress-container {
+        visibility: hidden;
+        width: 150px;
+    	height: 150px;
+        
+        #loading-progress {
+            width: 100%;
+            height: 100%;
+            
+            .progressbar-text {
+                font-weight: 600;
+            }
+        }
+        #cancel-loading {
+            position: absolute;
+            left: 50%;
+            bottom: 24px;
+            -webkit-transform: translateX(-50%);
+                    transform: translateX(-50%);
+        }
+    }
+    #center-message {
+        display: none;
+        
+        &.show {
+            display: block;
+        }
+        #try-again {
+            margin-top: 12px;
+        }
+    }
+}
+
+#legend-wrapper {
+    position: relative;
+    min-height: 15px;
+    
+    @media screen and (max-width: 720px) {
+        margin-bottom: 30px;
+    }
+}
+#legend {
+    text-align: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    
+    @media screen and (max-width: 720px) {
+        position: relative;
+    }
+    
+    .legend-item {
+        display: inline-block;
+        font-size: 0.875em;
+        margin: 4px 12px 4px;
+        
+        .legend-line {
+            display: inline-block;
+            width: 15px;
+            height: 3px;
+            vertical-align: middle;
+            margin-right: 3px;
+        }
+        
+        @for $i from 1 through 4 {
+            $type-colour: nth($type-colours, $i);
+            &.type-#{$i} {
+                color: $type-colour;
+                
+                .legend-line {
+                    background:  $type-colour;
+                }
+            }
+        }
+    }
+}
+
+#player-controls-wrapper {
+    position: relative;
+    margin: 20px 0 32px;
+    -webkit-touch-callout: none;
+      -webkit-user-select: none;
+         -moz-user-select: none;
+          -ms-user-select: none;
+              user-select: none;
+    
+    @media screen and (max-width: 479px), screen and (max-height: 479px) {
+        margin-top: 38px;
+    }
+    
+    #player-controls {
+        width: 100%;
+        background: $blue-grey-dark;
+        
+        button, label {
+            background: transparent;
+            border-radius: 0;
+            color: #FFF;
+            padding: 0;
+            -webkit-box-shadow: none;
+                    box-shadow: none;
+        }
+        
+        #play-pause, #goto-end {
+            background: transparent;
+            border-radius: 0;
+            color: #FFF;
+            padding: 0;
+            width: 36px;
+            height: 36px;
+        }
+        #play-pause span {
+            display: none;
+        }
+        #animation-area.paused & #play-pause .play,
+        #animation-area.playing & #play-pause .pause,
+        #animation-area.finished & #play-pause .restart {
+            display: inline;
+        }
+        
+        #progress-cell {
+            padding: 0 12px;
+            
+            &.active {
+                cursor: pointer;
+                
+                #progress-bar, #handle {
+                    display: block;
+                }
+            }
+        }
+        #progress-cell, #progress-wrapper, , #progress-background, #progress-bar {
+            width: 100%;
+        }
+        #progress-wrapper, #progress-background, #progress-bar {
+            position: relative;
+            height: 6px;
+        }
+        #progress-background, #progress-bar {
+            height: 100%;
+        }
+        #progress-background {
+            position: relative;
+            background: #000;
+            overflow: hidden;
+        }
+        #progress-bar, #handle {
+            display: none;
+        }
+        #progress-bar {
+            background: #FFF;
+            -webkit-transform: translate3d(-100%, 0, 0);
+                    transform: translate3d(-100%, 0, 0);
+        }
+        #handle {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            -webkit-transform: translate3d(-50%, -50%, 0);
+                    transform: translate3d(-50%, -50%, 0);
+            width: 18px;
+            height: 18px;
+            background: #FFF;
+            border-radius: 50%;
+        }
+        
+        &.tab-focus {
+            -webkit-box-shadow: 0 0 0 2px $link-blue;
+                    box-shadow: 0 0 0 2px $link-blue;
+        }
+    }
+    
+    #trade-date, #speed-list {
+        position: absolute;
+        bottom: 116.66667%;
+    }
+    #trade-date {
+        left: 0;
+        font-weight: 600;
+    }
+    #speed-list {
+        right: 0;
+        
+        fieldset {
+            margin: 0;
+        }
+        label {
+            padding: 2px 6px;
+            margin-right: 2px;
+            
+            $this-radius: 5px;
+            &:first-of-type {
+                border-top-left-radius: $this-radius;
+                border-bottom-left-radius: $this-radius;
+            }
+            &:last-of-type {
+                border-top-right-radius: $this-radius;
+                border-bottom-right-radius: $this-radius;
+            }
+        }
+        input[type=radio]:checked + label {
+            background: $blue-grey-dark;
+        }
+    }
+}
+
+#speed-list, .filter-block {
+    label {
+        -webkit-transition: opacity 0.25s;
+        transition: opacity 0.25s;
+    }
+    &.disabled label {
+        opacity: 0.4;
+    }
+}
+
+#filter-area {
+    padding: 8px 0;
+    margin: 18px 0;
+    border: $form-el-border-width solid $blue-grey-light;
+    border-radius: $form-el-radius;
+
+    .filter-block {
+        margin: 8px 20px;
+        display: inline-block;
+        vertical-align: top;
+        
+        &#trans-type-area label {
+            margin: 0 5px 11px 5px;
+        }
+    }
+    input[type="text"] {
+        text-align: center;
+        margin-bottom: 0;
+    }
+    p, fieldset, label.no-margin {
+        margin: 0;
+    }
+    .datepicker {
+        width: 140px;
+    }
+    
+    #player-search-area {
+        
+        #autocomplete-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-top: 4px;
+            
+            #player-clear-button {
+                display: none;
+            }
+            
+            &.has-selected {
+                
+                #player-name-input {
+                    background: $blue-grey-dark;
+                    border-color: $blue-grey-dark;
+                    color: #FFF;
+                    font-weight: 600;
+                    padding-right: 40px;
+                }
+                
+                #player-clear-button {
+                    display: block;
+                    position: absolute;
+                    padding: 0;
+                    height: 40px;
+                    width: 40px;
+                    right: 0;
+                    top: 50%;
+                    -webkit-transform: translateY(-50%);
+                            transform: translateY(-50%);
+                    color: #FFF;
+                    background: transparent;
+                    font-size: 20px;
+                    z-index: 3;
+                }
+            }
+            
+            $input-height: 45px;
+            $dropdown-offset: 15px;
+            
+            #player-name-input {
+                z-index: 3;
+                position: relative;
+                margin: 0;
+                height: $input-height;
+                width: 200px;
+            }
+            #player-name-dropdown {
+                display: none;
+                z-index: 2;
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: $input-height - $dropdown-offset;
+                border: $form-el-border-width solid $blue-grey-dark;
+                border-radius: $form-el-radius;
+                background: #FFF;
+                padding-top: $dropdown-offset;
+                overflow: hidden;
+                
+                button, p {
+                    padding: 5px $form-el-h-padding;
+                    margin: 0;
+                }
+                button {
+                    background: transparent;
+                    color: inherit;
+                    display: block;
+                    width: 100%;
+                    font-weight: 400;
+                    border-radius: 0;
+                    
+                    &:focus, &:hover {
+                        border: 0 none;
+                        outline: 0 none;
+                        -webkit-box-shadow: none;
+                                box-shadow: none;
+                        background: $btn-bkg-grey;
+                    }
+                }
+                p {
+                    color: $text-grey;
+                }
+            }
+        }
+    }
+    
+    h3 {
+        font-size: inherit;
+        font-weight: 600;
+        color: $text-grey;
+        margin: 0 0 4px;
+    }
+}
+
+.info-tooltip-container {
+    display: inline-block;
+    position: relative;
+    
+    .show-tooltip-button {
+        width: 30px;
+        height: 30px;
+        font-size: 20px;
+        line-height: 1;
+        padding: 0;
+        margin: -7px 0;
+        background: transparent;
+        color: $link-blue;
+        position: relative;
+        bottom: 2px;
+    }
+    .info-tooltip {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        width: auto;
+        border: $form-el-border-width solid $link-blue;
+        border-radius: $form-el-radius;
+        background: $btn-bkg-grey;
+        color: #000;
+        padding: 8px;
+        font-weight: normal;
+        z-index: 4;
+        width: 265px;
+        visibility: hidden;
+        opacity: 0;
+        -webkit-transition: visibility 0s 0.25s, opacity 0.25s;
+        transition: visibility 0s 0.25s, opacity 0.25s;
+    }
+    
+    &.show-tooltip .info-tooltip {
+        visibility: visible;
+        opacity: 1;
+        -webkit-transition-delay: 0s;
+                transition-delay: 0s;
+    }
+}
+
+.ui-widget {
+    font-family: inherit !important;
+    * {
+        font-family: inherit !important;
+    }
+    
+    &.ui-datepicker {
+    
+        .ui-datepicker-header {
+            background: none;
+            font-weight: 400;
+        }
+        
+        .ui-datepicker-prev, .ui-datepicker-next {
+            border: 0 none !important;
+            background: $green;
+            color: #FFF;
+            
+            span {
+                display: none;
+            }
+            &:after {
+                @include fa-pseudo;
+                position: relative;
+                top: 2px;
+            }
+        }
+        .ui-datepicker-prev {
+            left: 3px !important;
+            
+            &:after {
+                content: '\f060';
+            }
+        }
+        .ui-datepicker-next {
+            right: 3px !important;
+            
+            &:after {
+                content: '\f061';
+            }
+        }
+        .ui-datepicker-prev, .ui-datepicker-next,
+        .ui-datepicker-prev.ui-datepicker-prev-hover, .ui-datepicker-next.ui-datepicker-next-hover {
+            top: 3px !important;
+        }
+        
+        .ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default, .ui-button, html .ui-button.ui-state-disabled:hover, html .ui-button.ui-state-disabled:active {
+            border: 0 none;
+            background: $btn-bkg-grey;
+            color: $text-grey-dark;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .ui-state-active, .ui-widget-content .ui-state-active, .ui-widget-header .ui-state-active, a.ui-button:active, .ui-button:active, .ui-button.ui-state-active:hover {
+            background: $blue-grey-dark;
+            color: #FFF;
+        }
+        
+        .ui-datepicker-calendar td {
+            width: (100% / 7);
+        }
+    }
+}
+
+#other-options-area {
+    
+    .inline-block {
+        margin: 10px 12px;
+        position: relative;
+    }
+    
+    #filter-permalink {
+        width: 100%;
+        max-width: 420px;
+    }
+    
+    .info-tooltip-container {
+        position: absolute;
+        top: 0;
+        right: -32px;
+    }
+}
